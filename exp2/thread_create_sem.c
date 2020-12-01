@@ -32,6 +32,7 @@ int main(int argc, char *argv[]) {
         sem_wait(&gSem);
 
     printf("in main: exit!\n");
+    sem_destroy(&gSem);
     pthread_exit(NULL);
     return (0);
 }

@@ -14,8 +14,7 @@ int ret;
 int nread;
 int fd_tty;
 char buff[512];
-sem_t gSem; 
-
+sem_t gSem;
 
 int set_parity(int fd, int databits, int stopbits, int parity) {
     int ret;
@@ -40,7 +39,7 @@ int set_parity(int fd, int databits, int stopbits, int parity) {
 }
 
 void *thread_read_function(void *aSem) {
-    sem_t * sem = (sem_t *) aSem;
+    sem_t *sem = (sem_t *)aSem;
 
     while (1) {
         nread = read(fd_tty, buff, 255);
@@ -52,7 +51,7 @@ void *thread_read_function(void *aSem) {
 }
 
 void *thread_write_function(void *aSem) {
-    sem_t * sem = (sem_t *) aSem;
+    sem_t *sem = (sem_t *)aSem;
     while (1) {
         sem_wait(sem);
         write(fd_tty, buff, nread);
@@ -106,8 +105,8 @@ int main(int argc, char *argv[]) {
         close(fd_tty);
         return (-1);
     }
-    //init an semaphore shareable
-    sem_init(&gSem,1,0);
+    // init an semaphore shareable
+    sem_init(&gSem, 1, 0);
 
     ret = pthread_create(&tid[0], NULL, thread_read_function, (void *)&gSem);
     if (ret != 0) {
@@ -121,6 +120,7 @@ int main(int argc, char *argv[]) {
     }
     pthread_join(tid[0], NULL);
     pthread_join(tid[1], NULL);
+    sem_destroy(&gSem);
     pthread_exit(NULL);
     return 0;
 }
