@@ -1,3 +1,8 @@
+#include <fcntl.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
 #define SYSFS_GPIO_EXPORT "/sys/class/gpio/export"     // The path of export
 #define SYSFS_GPIO_UNEXPORT "/sys/class/gpio/unexport" // The path of unexport
 #define SYSFS_GPIO_RST_DIR_VAL_OUT "out"   // The value of direction out

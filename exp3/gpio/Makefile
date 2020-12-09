@@ -4,6 +4,9 @@ INC=.
 CFLAGS=-I${INC}
 LDFLAGS= -lstdc++
 
+CXX=${CROSS_COMPILE}g++
+CC=${CROSS_COMPILE}gcc
+
 SRC=./util.cpp testcase/interoperability.c
 
 all: gpio_in_ext gpio_out gpio_in
@@ -15,17 +18,20 @@ test_interoperability: util.o testcase/interoperability.o
 %.o: %.cpp
 	${CXX} ${CFLAGS} -c -o $@ $^
 
+%.o: %.c
+	${CC} ${CFLAGS} -c -o $@ $^
+
 %.o: testcase/%.c
 	${CXX} ${CFLAGS} -c -o $@ $^
 
 gpio_in_ext: gpio_in_ext.c GPIO_CTL.h
-	${CROSS_COMPILE}gcc -o gpio_in_ext gpio_in_ext.c -lpthread
+	${CXX} -o gpio_in_ext gpio_in_ext.c -lpthread
 
 gpio_out: gpio_out.c GPIO_CTL.h
-	${CROSS_COMPILE}gcc -o gpio_out gpio_out.c
+	${CXX} -o gpio_out gpio_out.c
 
-gpio_in: gpio_in.c GPIO_CTL.h
-	${CROSS_COMPILE}gcc -o gpio_in gpio_in.c
+gpio_in: gpio_in.o GPIO_CTL.h 
+	${CXX} -o gpio_in gpio_in.o util.o
 
 .PHONY: clean test
 
