@@ -1,0 +1,27 @@
+[
+    {
+        "arguments": [
+            "cc",
+            "-c",
+            "-I.",
+            "-o",
+            "testcase/interoperability.o",
+            "testcase/interoperability.c"
+        ],
+        "directory": "/home/cn/Project/BUAA/embedding/exp3/gpio",
+        "file": "testcase/interoperability.c"
+    },
+    {
+        "arguments": [
+            "cc",
+            "-c",
+            "-I.",
+            "test_interoperability",
+            "-o",
+            "test",
+            "test.c"
+        ],
+        "directory": "/home/cn/Project/BUAA/embedding/exp3/gpio",
+        "file": "test.c"
+    }
+]

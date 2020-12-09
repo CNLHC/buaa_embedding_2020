@@ -1,4 +1,6 @@
 #include "GPIO_CTL.h"
+#include "constant.h"
+#include "util.h"
 #include <errno.h>
 #include <fcntl.h>
 #include <stdio.h>
@@ -6,6 +8,11 @@
 #include <string.h>
 #include <sys/select.h>
 #include <unistd.h>
+
+void build_map() {
+  for (int i = 0; i < KEY_COUNTS; i++)
+    bind_key_led(GPIO_KEY_NUMBER[i], GPIO_LED_NUMBER[i]);
+}
 
 int gpio_read_keyval(int gpio_pin) {
   int fd;
@@ -57,35 +64,33 @@ int main(int argc, char *argv[]) {
   int value;
   int led_num = 24; /* gpio LED 的编号 */
   int key_num = 36; /* gpio KEY 的编号 */
-  int keyfd;
+  int keyfd[KEY_COUNTS];
   /*
    *打开led的gpio文件，设置为输出*/
   //补充代码
-  int ledfd;
-  ledfd = gpio_open(led_num, SYSFS_GPIO_RST_DIR_VAL_OUT);
-  if (ledfd == -1) {
-    printf("OPEN GPIO ERROR.\n");
-  }
-
-  /*
-   * 打开 KEY 的 GPIO 文件,设置为输入     */
-  keyfd = gpio_open(key_num, SYSFS_GPIO_RST_DIR_VAL_IN);
-  if (keyfd == -1) {
-    printf("OPEN GPIO ERROR.\n");
+  int ledfd[KEY_COUNTS];
+  for (int i = 0; i < KEY_COUNTS; i++) {
+    ledfd[i] = gpio_open(GPIO_LED_NUMBER[i], SYSFS_GPIO_RST_DIR_VAL_OUT);
+    if (ledfd == -1) {
+      printf("OPEN GPIO ERROR.\n");
+    }
+    keyfd[i] = gpio_open(GPIO_KEY_NUMBER[i], SYSFS_GPIO_RST_DIR_VAL_IN);
+    if (keyfd == -1) {
+      printf("OPEN GPIO ERROR.\n");
+    }
+    gpiokey_set_edge(GPIO_KEY_NUMBER[i]);
+    char path[100];
+    sprintf(path, "/sys/class/gpio/gpio%d/value", GPIO_KEY_NUMBER[i]);
+    keyfd[i] = open(path, O_RDONLY);
+    if (keyfd == -1) {
+      printf("open gpio value ERROR.\n");
+      return EXIT_FAILURE;
+    }
   }
 
   FD_ZERO(&fdset);
   //设置下降沿触发中断
-  gpiokey_set_edge(key_num);
-  char path[100];
-  sprintf(path, "/sys/class/gpio/gpio%d/value", key_num);
-  keyfd = open(path, O_RDONLY);
-  if (keyfd == -1) {
-    printf("open gpio value ERROR.\n");
-    return EXIT_FAILURE;
-  }
 
-  // gpio led init
   if (gpio_init(), 0)
     printf("init failed!\n");
 
@@ -93,26 +98,29 @@ int main(int argc, char *argv[]) {
 
   while (1) {
     //使用select模型
-    FD_SET(keyfd, &fdset);
+
+    int maxfd = 0;
+    for (int i = 0; i < KEY_COUNTS; i++) {
+      FD_SET(keyfd[i], &fdset);
+      if (maxfd < keyfd[i])
+        maxfd = keyfd[i];
+    }
     // Todo: select
-    ret = select(keyfd + 1, &fdset, NULL, NULL, NULL);
+    ret = select(maxfd + 1, &fdset, NULL, NULL, NULL);
+
     if (ret == -1) {
       printf("select err:%s\n", strerror(errno));
     }
-    if (ret == 1) {
+    if (ret > 0) {
       printf("Triggering interrupt. \n");
-      if (FD_ISSET(keyfd, &fdset)) {
-        printf("do what you like\n");
-      }
       value = gpio_read_keyval(key_num);
       if (value == 0) {
-        led_val = gpio_get_value(led_num);
+        led_val = gpio_get_value(key_to_led(ret));
         if (led_val == 1) {
-          // Todo:
-          gpio_set_value(led_num, SYSFS_GPIO_RST_VAL_L);
+          gpio_set_value(key_to_led(ret), SYSFS_GPIO_RST_VAL_L);
         } else {
           // Todo:
-          gpio_set_value(led_num, SYSFS_GPIO_RST_VAL_H);
+          gpio_set_value(key_to_led(ret), SYSFS_GPIO_RST_VAL_H);
         }
       } else {
         continue;
