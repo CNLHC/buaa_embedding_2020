@@ -1,1 +1,10 @@
 *ccls-cache/
+*.DS_Store
+exp2/pthread_serial
+exp2/thread_create_join
+exp2/thread_create_sem
+exp2/uart_test
+exp3/gpio_int/.gpio_in_modu.ko.cmd
+exp3/gpio_int/.gpio_in_modu.mod.o.cmd
+exp3/gpio_int/.gpio_in_modu.o.cmd
+exp3/gpio_int/.tmp_versions/gpio_in_modu.mod
