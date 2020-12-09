@@ -28,7 +28,7 @@ static int cout = 0;//记录中断触发次数
 
 static irqreturn_t irq_interrupt(int irq,void *dev_id)
 {
-	irqreturn_t irqreturn = IRQ_HANDLED;	
+	irqreturn_t irqreturn = IRQ_HANDLED;
 	int ret;
 	int led_num = 37;
 	//每执行一次中断，就对cout进行++，根据中断次数对gpio_led进行控制
@@ -37,7 +37,7 @@ static irqreturn_t irq_interrupt(int irq,void *dev_id)
 	cout++;
 	/*******************申请一个gpio led***********************************/
 	//Todo：
-	
+	ret = gpio_request(led_num, "GPIO_led");
 	if(ret < 0)
 	{
 		printk(KERN_ALERT"GPIO%d_request error!",led_num);
@@ -53,12 +53,12 @@ static irqreturn_t irq_interrupt(int irq,void *dev_id)
 	if(cout%2 == 0)
 	{
 		//Todo：设置gpio方向为out，初始值为1
-
+		gpio_direction_output(led_num, 1);
 		printk(KERN_ALERT"after GPIO%d_value is %d.\n",led_num,gpio_get_value(led_num));
 	}else if (cout%2 == 1)
 	{
 		//Todo：设置gpio方向为out，初始值为0
-
+		gpio_direction_output(led_num, 0);
 		printk(KERN_ALERT"after GPIO%d_value is %d.\n",led_num,gpio_get_value(led_num));
 	}
 	printk(KERN_ALERT"The interrupt occures! \n");
@@ -71,16 +71,16 @@ static int led_up(int led_num, int key_num)
 	int ret;
 	int irq;
 	int i;
-	
-	//Todo：申请一个gpio key
 
+	//Todo：申请一个gpio key
+	ret = gpio_request(key_num, "GPIO_key");
 	if(ret < 0)//申请失败
 	{
 		printk(KERN_ALERT"GPIO%d_request error!\n",key_num);
 		return -1;
 	}
 	//Todo：设置gpio方向为in
-
+	ret = gpio_direction_input(key_num);
 	if(ret < 0)
 	{
 		printk(KERN_ALERT"GPIO%d_set_direction error!",key_num);
@@ -88,11 +88,11 @@ static int led_up(int led_num, int key_num)
 	}else
 		printk(KERN_ALERT"gpio%d set direction!\n",key_num);
 	//Todo：设置中断
-
+	irq = gpio_to_irq(key_num);
 	printk(KERN_ALERT"begin the irq num is %d.\n",irq);
 	if(irq != -1)
 	{
-		
+
 		//注册中断函数irq_process()，中断号为key_num，设置下降沿触发
 		ret = request_irq(irq, irq_interrupt,IRQF_TRIGGER_FALLING, "GPIO_test",NULL);
 		if(ret == -1)
@@ -113,10 +113,11 @@ static int led_up(int led_num, int key_num)
 
 		}
 		//Todo：释放中断信号
+		free_irq(irq, NULL);
 
 		//Todo：释放gpio
+		gpio_free(key_num);
 
-	
 	}else
 	{
 		printk(KERN_ALERT"irq_requeset failed\n");
