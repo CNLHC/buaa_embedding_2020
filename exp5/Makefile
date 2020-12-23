@@ -1,8 +1,8 @@
-obj-m	:= gpio_in_modu.o
+obj-m	:= myzr_zlg7290_write.o myzr_zlg7290_read_extention.o
 
 
 #KERNELDIR ?= $(HOME)/my-work/02_sources/linux-3.14.52-myimx6a9
-KERNELDIR ?= /home/yourname/my-imx6/02_sources/linux-3.14.52
+KERNELDIR ?= /root/my-imx6/02_sources/linux-3.14.52
 PWD       := $(shell pwd)
 
 default:
