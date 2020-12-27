@@ -35,3 +35,7 @@ add_custom_command(OUTPUT ${MODULE_NAME}.ko
 add_custom_target(module DEPENDS ${MODULE_NAME}.ko)
 add_custom_target(module-clean COMMAND ${module_cmd} clean)
 
+add_executable(clock clock.c)
+target_include_directories(clock PUBLIC .)
+
+
