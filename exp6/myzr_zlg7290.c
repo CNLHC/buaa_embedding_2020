@@ -2,328 +2,324 @@
  * BUAA LDMC
  */
 
-#include <linux/kernel.h>
-#include <linux/module.h>
+#include <linux/delay.h>
+#include <linux/fs.h>
+#include <linux/gpio.h>
 #include <linux/i2c.h>
 #include <linux/input.h>
-#include <linux/delay.h>
-#include <linux/slab.h>
 #include <linux/interrupt.h>
 #include <linux/irq.h>
-#include <linux/gpio.h>
-#include <linux/fs.h>
-#include <linux/cdev.h>
-#include <linux/platform_device.h>
-
+#include <linux/kernel.h>
 #include <linux/module.h>
+#include <linux/platform_device.h>
+#include <linux/slab.h>
+
 #include <linux/cdev.h>
 #include <linux/fs.h>
+#include <linux/module.h>
 #include <linux/poll.h>
 #include <linux/sched.h>
 
-#define ZLG7290_NAME		"zlg7290"
-#define ZLG7290_LED_NAME	"zlg7290_led"
+#include "led_ioctl.h"
+#define ZLG7290_NAME "zlg7290"
+#define ZLG7290_LED_NAME "zlg7290_led"
 
-#define REG_DP_RAM0		0x10  //µÚÒ»¸öÊıÂë¹ÜµÄ¼Ä´æÆ÷
-#define REG_DP_RAM1		0x11  //µÚ¶ş¸öÊıÂë¹ÜµÄ¼Ä´æÆ÷
-#define REG_DP_RAM2		0x12  //µÚÈı¸öÊıÂë¹ÜµÄ¼Ä´æÆ÷
-#define REG_DP_RAM3		0x13  //µÚËÄ¸öÊıÂë¹ÜµÄ¼Ä´æÆ÷
-#define REG_DP_RAM4		0x14
-#define REG_DP_RAM5		0x15
-#define REG_DP_RAM6		0x16
-#define REG_DP_RAM7		0x17
+#define REG_DP_RAM0 0x10  //ç¬¬ä¸€ä¸ªæ•°ç ç®¡çš„å¯„å­˜å™¨
+#define REG_DP_RAM1 0x11  //ç¬¬äºŒä¸ªæ•°ç ç®¡çš„å¯„å­˜å™¨
+#define REG_DP_RAM2 0x12  //ç¬¬ä¸‰ä¸ªæ•°ç ç®¡çš„å¯„å­˜å™¨
+#define REG_DP_RAM3 0x13  //ç¬¬å››ä¸ªæ•°ç ç®¡çš„å¯„å­˜å™¨
+#define REG_DP_RAM4 0x14
+#define REG_DP_RAM5 0x15
+#define REG_DP_RAM6 0x16
+#define REG_DP_RAM7 0x17
 
-#define ZLG7290_LED_MAJOR	800  //Ö÷Éè±¸ºÅ
-#define ZLG7290_LED_MINOR	0    //´ÓÉè±¸ºÅ
-#define ZLG7290_LED_DEVICES	1    //Éè±¸ÊıÁ¿
+#define ZLG7290_LED_MAJOR 800  //ä¸»è®¾å¤‡å·
+#define ZLG7290_LED_MINOR 0    //ä»è®¾å¤‡å·
+#define ZLG7290_LED_DEVICES 1  //è®¾å¤‡æ•°é‡
 
 #define WRITE_DPRAM _IO('Z', 0)
 
-// ÊıÂë¹ÜÉè±¸½á¹¹Ìå
-struct zlg7290
-{
-	struct i2c_client *client;
-	
-	struct input_dev *input;
-	struct delayed_work work;
-	unsigned long delay;
-	
-	struct cdev cdev;
+// æ•°ç ç®¡è®¾å¤‡ç»“æ„ä½“
+struct zlg7290 {
+    struct i2c_client *client;
+
+    struct input_dev *input;
+    struct delayed_work work;
+    unsigned long delay;
+
+    struct cdev cdev;
 };
 
-// ÊıÂë¹ÜÉè±¸½á¹¹ÌåÈ«¾ÖÊµÀı
+// æ•°ç ç®¡è®¾å¤‡ç»“æ„ä½“å…¨å±€å®ä¾‹
 struct zlg7290 *ptr_zlg7290;
 
-
-// Ïòi2c×ÜÏßĞ´Êı¾İ
-// ¿¼µã£º·ÖÎö¸÷¸ö²ÎÊıÈ¡ÖµµÄº¬Òå
-/* ²ÎÊı£º
- * zlg7290 £ºÊıÂë¹Ü½á¹¹ÌåÖ¸Õë
- * len £º´ıĞ´ÈëµÄ×Ö½ÚÊı£¨ÒÔbyteÎªµ¥Î»£©
- * retlen £º ·µ»ØĞ´ÈëµÄ×Ö½ÚÊı£¨readº¯ÊıÖĞÊ¹ÓÃ£©£¨×¢ÒâÊÇ¸öÖ¸Õë£©
- * buf£º ´ıĞ´ÈëÊı¾İÖ¸Õë£¨¼Ä´æÆ÷µØÖ·ºÍ´ıĞ´Êı¾İ£©
+// å‘i2cæ€»çº¿å†™æ•°æ®
+// è€ƒç‚¹ï¼šåˆ†æå„ä¸ªå‚æ•°å–å€¼çš„å«ä¹‰
+/* å‚æ•°ï¼š
+ * zlg7290 ï¼šæ•°ç ç®¡ç»“æ„ä½“æŒ‡é’ˆ
+ * len ï¼šå¾…å†™å…¥çš„å­—èŠ‚æ•°ï¼ˆä»¥byteä¸ºå•ä½ï¼‰
+ * retlen ï¼š è¿”å›å†™å…¥çš„å­—èŠ‚æ•°ï¼ˆreadå‡½æ•°ä¸­ä½¿ç”¨ï¼‰ï¼ˆæ³¨æ„æ˜¯ä¸ªæŒ‡é’ˆï¼‰
+ * bufï¼š å¾…å†™å…¥æ•°æ®æŒ‡é’ˆï¼ˆå¯„å­˜å™¨åœ°å€å’Œå¾…å†™æ•°æ®ï¼‰
  */
-static int zlg7290_hw_write(struct zlg7290 *zlg7290,  int len, size_t *retlen, char *buf)
-{
-	struct i2c_client *client = zlg7290->client;
-	int ret;
+static int zlg7290_hw_write(struct zlg7290 *zlg7290, int len, size_t *retlen,
+                            char *buf) {
+    struct i2c_client *client = zlg7290->client;
+    int ret;
 
-    //i2c_msg
-    /* ²ÎÊı£º 
-     * client->addr : Ğ¾Æ¬µØÖ·
-     * 0 £ºflagÎ»£¬0´ú±íwrite£¬I2C_M_RD´ú±íread
-     * len £º ´ıĞ´ÈëµÄ×Ö½ÚÊı
-     * buf £º ´ıĞ´ÈëµÄÊı¾İµÄÊ×µØÖ· 
+    // i2c_msg
+    /* å‚æ•°ï¼š
+     * client->addr : èŠ¯ç‰‡åœ°å€
+     * 0 ï¼šflagä½ï¼Œ0ä»£è¡¨writeï¼ŒI2C_M_RDä»£è¡¨read
+     * len ï¼š å¾…å†™å…¥çš„å­—èŠ‚æ•°
+     * buf ï¼š å¾…å†™å…¥çš„æ•°æ®çš„é¦–åœ°å€
      */
-	struct i2c_msg msg[] = {
-		{ client->addr, 0, len, buf},
-	};
+    struct i2c_msg msg[] = {
+        {client->addr, 0, len, buf},
+    };
 
-	ret =i2c_transfer(client->adapter, msg, 1);
-	if (ret < 0) 
-	{
-		dev_err(&client->dev, "i2c write error!\n");
-		return -EIO;
-	}
+    ret = i2c_transfer(client->adapter, msg, 1);
+    if (ret < 0) {
+        dev_err(&client->dev, "i2c write error!\n");
+        return -EIO;
+    }
 
-	*retlen = len;
-	return 0;
+    *retlen = len;
+    return 0;
 }
 
-// ´Ói2c×ÜÏß¶ÁÊı¾İ
-static int zlg7290_hw_read(struct zlg7290 *zlg7290, int len, size_t *retlen, char *buf)
-{
-	struct i2c_client *client = zlg7290->client;
-	int ret;
+// ä»i2cæ€»çº¿è¯»æ•°æ®
+static int zlg7290_hw_read(struct zlg7290 *zlg7290, int len, size_t *retlen,
+                           char *buf) {
+    struct i2c_client *client = zlg7290->client;
+    int ret;
 
-    //Todo£º·ÂÕÕzlg7290_hw_writeĞ´³öreadº¯Êı
-    /*²½Öè£º
-     *1. ¹¹Ôìi2c_msg msg[]£¨ÓÉÓÚreadĞèÒªÁ½´ÎÍ¨ĞÅ£¬Òò´ËĞèÒª¹¹ÔìÁ½´Î²ÎÊıµÄÖµ£©
-     *2. µ÷ÓÃi2c_transfer(×¢Òâ²ÎÊıÈçºÎÌîĞ´)
+    // Todoï¼šä»¿ç…§zlg7290_hw_writeå†™å‡ºreadå‡½æ•°
+    /*æ­¥éª¤ï¼š
+     *1. æ„é€ i2c_msg msg[]ï¼ˆç”±äºreadéœ€è¦ä¸¤æ¬¡é€šä¿¡ï¼Œå› æ­¤éœ€è¦æ„é€ ä¸¤æ¬¡å‚æ•°çš„å€¼ï¼‰
+     *2. è°ƒç”¨i2c_transfer(æ³¨æ„å‚æ•°å¦‚ä½•å¡«å†™)
      */
-	struct i2c_msg msg[] = { 
-		{ client->addr, 0, len, buf},  // Todo£ºµÚÒ»¸öi2c_msgÓÃÀ´·¢ËÍĞèÒª¶ÁÈ¡µÄ´ÓÉè±¸Ä¿±ê¼Ä´æÆ÷µÄµØÖ·£¬buf±£´æ´ı¶Á¼Ä´æÆ÷µÄµØÖ·
-		{ client->addr, I2C_M_RD, len, buf },  //Todo£ºµÚ¶ş¸öi2c_msgÓÃÀ´ÉèÖÃ½ÓÊÕ´ÓÉè±¸Ä¿±ê¼Ä´æÆ÷·µ»ØÊı¾İµÄbufÒÔ¼°Êı¾İ³¤¶È£¬buf±£´æ´Ó¼Ä´æÆ÷ÄÚ¶Áµ½µÄÖµµÄµØÖ·
-	};
+    struct i2c_msg msg[] = {
+        {client->addr, 0, len,
+         buf},  // Todoï¼šç¬¬ä¸€ä¸ªi2c_msgç”¨æ¥å‘é€éœ€è¦è¯»å–çš„ä»è®¾å¤‡ç›®æ ‡å¯„å­˜å™¨çš„åœ°å€ï¼Œbufä¿å­˜å¾…è¯»å¯„å­˜å™¨çš„åœ°å€
+        {client->addr, I2C_M_RD, len,
+         buf},  // Todoï¼šç¬¬äºŒä¸ªi2c_msgç”¨æ¥è®¾ç½®æ¥æ”¶ä»è®¾å¤‡ç›®æ ‡å¯„å­˜å™¨è¿”å›æ•°æ®çš„bufä»¥åŠæ•°æ®é•¿åº¦ï¼Œbufä¿å­˜ä»å¯„å­˜å™¨å†…è¯»åˆ°çš„å€¼çš„åœ°å€
+    };
 
-    
-	ret =i2c_transfer(client->adapter, msg, 2);
-	if (ret < 0) 
-	{
-		dev_err(&client->dev, "i2c read error!\n");
-		return -EIO;
-	}
+    ret = i2c_transfer(client->adapter, msg, 2);
+    if (ret < 0) {
+        dev_err(&client->dev, "i2c read error!\n");
+        return -EIO;
+    }
 
-	*retlen = len;
-	return 0;
+    *retlen = len;
+    return 0;
 }
 
-// ´ò¿ªÊıÂë¹ÜÉè±¸
-static int zlg7290_led_open(struct inode *inode, struct file *file)
-{
-	return 0;
+// æ‰“å¼€æ•°ç ç®¡è®¾å¤‡
+static int zlg7290_led_open(struct inode *inode, struct file *file) {
+    return 0;
 }
 
-// ÊÍ·ÅÊıÂë¹ÜÉè±¸
-static int zlg7290_led_release(struct inode *inode, struct file *file)
-{
-	return 0;
+// é‡Šæ”¾æ•°ç ç®¡è®¾å¤‡
+static int zlg7290_led_release(struct inode *inode, struct file *file) {
+    return 0;
 }
 
-// ÏòÉÏµÄ½Ó¿Ú£¬ÓÃ»§Ì¬Í¨¹ıµ÷ÓÃioctlÏµÍ³º¯Êı£¬ÒşÊ½µ÷ÓÃ¸Ãº¯Êı
-/* ²ÎÊı£º
- * filp £ºÎÄ¼ş½á¹¹Ìå£¬ÓÃ»§Ì¬ÎªÎÄ¼şÃèÊö·û
- * cmd£º
- * arg£º ´ıĞ´Êı¾İ£¨longÔÚÏµÍ³ÖĞÕ¼8bytes£¬¶ÔÓ¦8¸ö¼Ä´æÆ÷£¬arg¸ßÎ»¶ÔÓ¦µÍµØÖ·¼Ä´æÆ÷£©
+// å‘ä¸Šçš„æ¥å£ï¼Œç”¨æˆ·æ€é€šè¿‡è°ƒç”¨ioctlç³»ç»Ÿå‡½æ•°ï¼Œéšå¼è°ƒç”¨è¯¥å‡½æ•°
+/* å‚æ•°ï¼š
+ * filp ï¼šæ–‡ä»¶ç»“æ„ä½“ï¼Œç”¨æˆ·æ€ä¸ºæ–‡ä»¶æè¿°ç¬¦
+ * cmdï¼š
+ * argï¼š
+ * å¾…å†™æ•°æ®ï¼ˆlongåœ¨ç³»ç»Ÿä¸­å 8bytesï¼Œå¯¹åº”8ä¸ªå¯„å­˜å™¨ï¼Œargé«˜ä½å¯¹åº”ä½åœ°å€å¯„å­˜å™¨ï¼‰
  */
-static long zlg7290_led_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
-{
-	unsigned char data_buf[8] = {0};
-    
-    // write_val[0] : ´ıĞ´Èë¼Ä´æÆ÷µÄµØÖ·
-    // write_val[1] : ´ıĞ´Èë¼Ä´æÆ÷µÄÊı¾İ
-	unsigned char write_val[2] = {0};
+static long zlg7290_led_ioctl(struct file *filp, unsigned int cmd,
+                              unsigned long arg) {
+    unsigned char data_buf[8] = {0};
 
-    
-	ssize_t len = 0;
-	int i = 0;
-	
-	switch(cmd){
-		case WRITE_DPRAM:
-			if(copy_from_user(data_buf, (void *)arg, 8))
-				return -EFAULT;
-			
-			//²¹È«ÊıÂë¹ÜÏÔÊ¾Âß¼­
-			break;
-		default:
-			dev_err(&ptr_zlg7290->client->dev, "unsupported command!\n");
-			break;
-	}
+    // write_val[0] : å¾…å†™å…¥å¯„å­˜å™¨çš„åœ°å€
+    // write_val[1] : å¾…å†™å…¥å¯„å­˜å™¨çš„æ•°æ®
+    unsigned char write_val[2] = {0};
+    ssize_t len = 0;
+    int i = 0;
 
-	return 0;
+    switch (cmd) {
+        case LED_APPLY:
+            struct digit_cell_ctx ctx;
+            unsigned char write_val[2] = {0};
+            int j = 0 ;
+
+            copy_from_user(&ctx, (*)arg, 8);
+            for ( j = 0; j < 8; j++) {  
+                size_t retlen;
+                write_val[0] = REG_DP_RAM0 + ctx.Index;
+                write_val[1] = ctx.Digit;
+                zlg7290_hw_write(ptr_zlg7290, 2, &retlen, (char *)write_val);
+                msleep(1);  
+            }
+            break;
+        case WRITE_DPRAM:
+            if (copy_from_user(data_buf, (void *)arg, 8)) return -EFAULT;
+
+            break;
+        default:
+            dev_err(&ptr_zlg7290->client->dev, "unsupported command!\n");
+            break;
+    }
+
+    return 0;
 }
 
-// file_operations: °ÑÏµÍ³µ÷ÓÃºÍÇı¶¯³ÌĞò¹ØÁªÆğÀ´µÄ¹Ø¼üÊı¾İ½á¹¹
+// file_operations: æŠŠç³»ç»Ÿè°ƒç”¨å’Œé©±åŠ¨ç¨‹åºå…³è”èµ·æ¥çš„å…³é”®æ•°æ®ç»“æ„
 static struct file_operations zlg7290_led_fops = {
-	.owner = THIS_MODULE,
-	.open = zlg7290_led_open,
-	.release = zlg7290_led_release,
-	.unlocked_ioctl = zlg7290_led_ioctl,
+    .owner = THIS_MODULE,
+    .open = zlg7290_led_open,
+    .release = zlg7290_led_release,
+    .unlocked_ioctl = zlg7290_led_ioctl,
 };
 
-// ×¢²áÊıÂë¹ÜĞ¡µÆÉè±¸Ö÷Éè±¸ºÅ£ºMAJOR£¬´ÓÉè±¸ºÅ£ºMINOR
-static int register_zlg7290_led(struct zlg7290 *zlg7290) 
-{
-	struct cdev *zlg7290_cdev;
-	int ret;
-	dev_t devid;
+// æ³¨å†Œæ•°ç ç®¡å°ç¯è®¾å¤‡ä¸»è®¾å¤‡å·ï¼šMAJORï¼Œä»è®¾å¤‡å·ï¼šMINOR
+static int register_zlg7290_led(struct zlg7290 *zlg7290) {
+    struct cdev *zlg7290_cdev;
+    int ret;
+    dev_t devid;
 
-	devid = MKDEV(ZLG7290_LED_MAJOR, ZLG7290_LED_MINOR);
-	ret = register_chrdev_region(devid, ZLG7290_LED_DEVICES, ZLG7290_LED_NAME);
-	if (ret < 0) {
-		dev_err(&zlg7290->client->dev, "register chrdev fail!\n");
-		return ret;
-	}
+    devid = MKDEV(ZLG7290_LED_MAJOR, ZLG7290_LED_MINOR);
+    ret = register_chrdev_region(devid, ZLG7290_LED_DEVICES, ZLG7290_LED_NAME);
+    if (ret < 0) {
+        dev_err(&zlg7290->client->dev, "register chrdev fail!\n");
+        return ret;
+    }
 
-	zlg7290_cdev = &zlg7290->cdev;
-	cdev_init(zlg7290_cdev, &zlg7290_led_fops);
-	zlg7290_cdev->owner = THIS_MODULE;
-	ret = cdev_add(zlg7290_cdev, devid, 1);
-	if (ret < 0) {
-		dev_err(&zlg7290->client->dev, "cdev add fail!\n");
-		goto err_unreg_chrdev;
-	}
-	return 0;
+    zlg7290_cdev = &zlg7290->cdev;
+    cdev_init(zlg7290_cdev, &zlg7290_led_fops);
+    zlg7290_cdev->owner = THIS_MODULE;
+    ret = cdev_add(zlg7290_cdev, devid, 1);
+    if (ret < 0) {
+        dev_err(&zlg7290->client->dev, "cdev add fail!\n");
+        goto err_unreg_chrdev;
+    }
+    return 0;
 
 err_unreg_chrdev:
-	unregister_chrdev_region(devid, ZLG7290_LED_DEVICES);
-	return ret;
+    unregister_chrdev_region(devid, ZLG7290_LED_DEVICES);
+    return ret;
 }
 
-// ´ÓÏµÍ³ÖĞ×¢ÏúÉè±¸
-static int unregister_zlg7290_led(struct zlg7290 *zlg7290) 
-{
-	cdev_del(&zlg7290->cdev);
-	
-	unregister_chrdev_region(MKDEV(ZLG7290_LED_MAJOR, ZLG7290_LED_MINOR), ZLG7290_LED_DEVICES);
-	
-	return 0;
+// ä»ç³»ç»Ÿä¸­æ³¨é”€è®¾å¤‡
+static int unregister_zlg7290_led(struct zlg7290 *zlg7290) {
+    cdev_del(&zlg7290->cdev);
+
+    unregister_chrdev_region(MKDEV(ZLG7290_LED_MAJOR, ZLG7290_LED_MINOR),
+                             ZLG7290_LED_DEVICES);
+
+    return 0;
 }
 
-// Ì½²âº¯Êı£¬Èç¹ûÇı¶¯Æ¥Åäµ½ÁËÄ¿±êÉè±¸£¬×ÜÏß»á×Ô¶¯»Øµ÷probeº¯Êı
-static int 
-zlg7290_probe(struct i2c_client *client, const struct i2c_device_id *id)
-{
-	struct input_dev *input_dev;
-	int ret = 0;
-	
-	if (!i2c_check_functionality(client->adapter, I2C_FUNC_SMBUS_BYTE)) {
-		dev_err(&client->dev, "%s adapter not supported\n",
-			dev_driver_string(&client->adapter->dev));
-		return -ENODEV;
-	}
-	
-	ptr_zlg7290 = kzalloc(sizeof(struct zlg7290), GFP_KERNEL);
-	input_dev = input_allocate_device();
-	if (!ptr_zlg7290 || !input_dev) {
-		ret = -ENOMEM;
-		goto err_free_mem;
-	}
-	
-	input_dev->name = client->name;
-	input_dev->phys = "zlg7290-keys/input0";
-	input_dev->dev.parent = &client->dev;
-	input_dev->id.bustype = BUS_I2C;
-	input_dev->id.vendor = 0x0001;
-	input_dev->id.product = 0x0001;
-	input_dev->id.version = 0x0001;
-	input_dev->evbit[0] = BIT_MASK(EV_KEY);
-	
-	
+// æ¢æµ‹å‡½æ•°ï¼Œå¦‚æœé©±åŠ¨åŒ¹é…åˆ°äº†ç›®æ ‡è®¾å¤‡ï¼Œæ€»çº¿ä¼šè‡ªåŠ¨å›è°ƒprobeå‡½æ•°
+static int zlg7290_probe(struct i2c_client *client,
+                         const struct i2c_device_id *id) {
+    struct input_dev *input_dev;
+    int ret = 0;
 
-	ret = input_register_device(input_dev);
-	if (ret) {
-		dev_err(&client->dev, "unable to register input device\n");
-		goto err_unreg_dev;
-	}
+    if (!i2c_check_functionality(client->adapter, I2C_FUNC_SMBUS_BYTE)) {
+        dev_err(&client->dev, "%s adapter not supported\n",
+                dev_driver_string(&client->adapter->dev));
+        return -ENODEV;
+    }
 
-	ptr_zlg7290->client = client;
-	ptr_zlg7290->input = input_dev;
-	i2c_set_clientdata(client, ptr_zlg7290);
-	
-	ret = register_zlg7290_led(ptr_zlg7290);
-	if (ret < 0)
-		return ret;
+    ptr_zlg7290 = kzalloc(sizeof(struct zlg7290), GFP_KERNEL);
+    input_dev = input_allocate_device();
+    if (!ptr_zlg7290 || !input_dev) {
+        ret = -ENOMEM;
+        goto err_free_mem;
+    }
+
+    input_dev->name = client->name;
+    input_dev->phys = "zlg7290-keys/input0";
+    input_dev->dev.parent = &client->dev;
+    input_dev->id.bustype = BUS_I2C;
+    input_dev->id.vendor = 0x0001;
+    input_dev->id.product = 0x0001;
+    input_dev->id.version = 0x0001;
+    input_dev->evbit[0] = BIT_MASK(EV_KEY);
+
+    ret = input_register_device(input_dev);
+    if (ret) {
+        dev_err(&client->dev, "unable to register input device\n");
+        goto err_unreg_dev;
+    }
+
+    ptr_zlg7290->client = client;
+    ptr_zlg7290->input = input_dev;
+    i2c_set_clientdata(client, ptr_zlg7290);
+
+    ret = register_zlg7290_led(ptr_zlg7290);
+    if (ret < 0) return ret;
 
     printk("probe done! \n");
-	return 0;
+    return 0;
 
 err_unreg_dev:
-	input_unregister_device(input_dev);
-	input_dev = NULL;
+    input_unregister_device(input_dev);
+    input_dev = NULL;
 err_free_mem:
-	input_free_device(input_dev);
-	kfree(ptr_zlg7290);
+    input_free_device(input_dev);
+    kfree(ptr_zlg7290);
 
-	return ret;
+    return ret;
 }
 
-// ÊÍ·Åº¯Êı£¬Èç¹ûÆ¥Åäµ½µÄÉè±¸´Ó×ÜÏßÒÆ³ıÁË£¬×ÜÏß»á×Ô¶¯»Øµ÷removeº¯Êı
-static int zlg7290_remove(struct i2c_client *client) 
-{
-	struct zlg7290 *zlg7290 = i2c_get_clientdata(client);
+// é‡Šæ”¾å‡½æ•°ï¼Œå¦‚æœåŒ¹é…åˆ°çš„è®¾å¤‡ä»æ€»çº¿ç§»é™¤äº†ï¼Œæ€»çº¿ä¼šè‡ªåŠ¨å›è°ƒremoveå‡½æ•°
+static int zlg7290_remove(struct i2c_client *client) {
+    struct zlg7290 *zlg7290 = i2c_get_clientdata(client);
     unregister_zlg7290_led(zlg7290);
     printk("remove done! \n");
-	return 0;
+    return 0;
 }
 
-// Æ¥ÅäÉè±¸ºÍÇı¶¯
-// ¿¼µã£ºÎªÊ²Ã´ĞèÒªi2c_device_id£¿
-// ÌáÊ¾£ºÒ»¸öÉè±¸Ö»ÓĞÒ»¸öÇı¶¯£¬Ò»¸öÇı¶¯¿ÉÒÔ¶ÔÓ¦¶à¸öÉè±¸
-static const struct i2c_device_id zlg7290_id[] = {
-	{ZLG7290_NAME, 0 },
-	{ }
-};
+// åŒ¹é…è®¾å¤‡å’Œé©±åŠ¨
+// è€ƒç‚¹ï¼šä¸ºä»€ä¹ˆéœ€è¦i2c_device_idï¼Ÿ
+// æç¤ºï¼šä¸€ä¸ªè®¾å¤‡åªæœ‰ä¸€ä¸ªé©±åŠ¨ï¼Œä¸€ä¸ªé©±åŠ¨å¯ä»¥å¯¹åº”å¤šä¸ªè®¾å¤‡
+static const struct i2c_device_id zlg7290_id[] = {{ZLG7290_NAME, 0}, {}};
 MODULE_DEVICE_TABLE(i2c, zlg7290_id);
 
 #ifdef CONFIG_OF
 static const struct of_device_id zlg7290_dt_ids[] = {
-	{ .compatible = "myzr,zlg7290", },
-	{ }
-};
+    {
+        .compatible = "myzr,zlg7290",
+    },
+    {}};
 MODULE_DEVICE_TABLE(of, zlg7290_dt_ids);
 #endif
 
-// Çı¶¯³ÌĞò½á¹¹Ìå£¨ÖØÒª£©
-// ¿¼µã£ºÇë·ÖÎöinit£¬probe£¬removeºÍexitº¯ÊıµÄÖ´ĞĞË³Ğò
-// ÌáÊ¾£º¿ÉÍ¨¹ıprintkÀ´·ÖÎö
-static struct i2c_driver zlg7290_driver= {
-	.driver	= {
-		.name	= ZLG7290_NAME,
-		.owner	= THIS_MODULE,
-		.of_match_table = of_match_ptr(zlg7290_dt_ids),
-	},
-	.probe		= zlg7290_probe,
-    .remove     = zlg7290_remove,
-	.id_table	= zlg7290_id
-};
+// é©±åŠ¨ç¨‹åºç»“æ„ä½“ï¼ˆé‡è¦ï¼‰
+// è€ƒç‚¹ï¼šè¯·åˆ†æinitï¼Œprobeï¼Œremoveå’Œexitå‡½æ•°çš„æ‰§è¡Œé¡ºåº
+// æç¤ºï¼šå¯é€šè¿‡printkæ¥åˆ†æ
+static struct i2c_driver zlg7290_driver = {
+    .driver =
+        {
+            .name = ZLG7290_NAME,
+            .owner = THIS_MODULE,
+            .of_match_table = of_match_ptr(zlg7290_dt_ids),
+        },
+    .probe = zlg7290_probe,
+    .remove = zlg7290_remove,
+    .id_table = zlg7290_id};
 
-// ³õÊ¼»¯Ä£¿é
-static int __init zz_init(void)
-{
+// åˆå§‹åŒ–æ¨¡å—
+static int __init zz_init(void) {
     printk("initialize module ..\n");
-	//module_i2c_driverºêÕ¹¿ª
-	i2c_register_driver(THIS_MODULE, &zlg7290_driver);
-	printk("register ok!\n");
-	return 0;
+    // module_i2c_driverå®å±•å¼€
+    i2c_register_driver(THIS_MODULE, &zlg7290_driver);
+    printk("register ok!\n");
+    return 0;
 }
 
-// Ğ¶ÔØÄ£¿é
-static void __exit zz_exit(void)
-{	
+// å¸è½½æ¨¡å—
+static void __exit zz_exit(void) {
     printk("begin remove module ..\n");
     i2c_del_driver(&zlg7290_driver);
-	printk("886, The module has been removed\n");
+    printk("886, The module has been removed\n");
 }
 
 module_init(zz_init);
