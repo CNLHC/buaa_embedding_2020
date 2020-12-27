@@ -140,14 +140,11 @@ static long zlg7290_led_ioctl(struct file *filp, unsigned int cmd,
     // write_val[1] : 待写入寄存器的数据
     unsigned char write_val[2] = {0};
     ssize_t len = 0;
-    int i = 0;
+    int j = 0;
 
     switch (cmd) {
         case LED_APPLY:
             struct digit_cell_ctx ctx;
-            unsigned char write_val[2] = {0};
-            int j = 0 ;
-
             copy_from_user(&ctx, (*)arg, 8);
             for ( j = 0; j < 8; j++) {  
                 size_t retlen;
