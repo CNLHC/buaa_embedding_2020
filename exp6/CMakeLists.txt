@@ -38,4 +38,6 @@ add_custom_target(module-clean COMMAND ${module_cmd} clean)
 add_executable(clock clock.c)
 target_include_directories(clock PUBLIC .)
 
+add_executable(led_hex led_hex.c)
+target_include_directories(led_hex PUBLIC .)
 

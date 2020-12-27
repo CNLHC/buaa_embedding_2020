@@ -27,26 +27,13 @@ int main(int argc, const char *argv[]) {
 
     //调用ioctl(*, *, *)函数，实现数码管的显示
     // ioctl(,,)
-    time_t now;
-    struct tm *tm_now;
-    int value[4] = {0};
-    int loop_round = 100;
     int i = 0;
     int j = 0;
 
-    // 循环100s, 之后自动关闭设备
-    for (i = 0; i < loop_round; i++) {
-        time(&now);
-        tm_now = localtime(&now);
-        printf("当前时间为 %2d:%2d\n", tm_now->tm_min, tm_now->tm_sec);
-        // 换算成写入4个数码管寄存器的具体数值
-        value[0] = hex_map[(tm_now->tm_min / 10)];
-        value[1] = minu_last_map[tm_now->tm_min % 10];
-        value[2] = hex_map[(tm_now->tm_sec / 10)];
-        value[3] = hex_map[tm_now->tm_sec % 10];
-
+    // 循环16s, 之后自动关闭设备
+    for (i = 0; i < 16; i++) {
         for (j = 0; j < 4; j++) {
-            struct digit_cell_ctx ctx = {.Index = j, .Digit = value[j]};
+            struct digit_cell_ctx ctx = {.Index = j, .Digit = hex_map[i]};
             ioctl(fd, LED_APPLY, &ctx);
         }
         sleep(1);
@@ -62,4 +49,3 @@ int main(int argc, const char *argv[]) {
     close(fd);
     return 0;
 }
-
