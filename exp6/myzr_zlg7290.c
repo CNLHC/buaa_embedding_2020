@@ -134,29 +134,23 @@ static int zlg7290_led_release(struct inode *inode, struct file *file) {
  */
 static long zlg7290_led_ioctl(struct file *filp, unsigned int cmd,
                               unsigned long arg) {
-    unsigned char data_buf[8] = {0};
-
     // write_val[0] : 待写入寄存器的地址
     // write_val[1] : 待写入寄存器的数据
     unsigned char write_val[2] = {0};
-    ssize_t len = 0;
-    int j = 0;
-
+    struct digit_cell_ctx ctx;
+    size_t retlen;
     switch (cmd) {
         case LED_APPLY:
-            struct digit_cell_ctx ctx;
-            copy_from_user(&ctx, (*)arg, 8);
-            for ( j = 0; j < 8; j++) {  
-                size_t retlen;
-                write_val[0] = REG_DP_RAM0 + ctx.Index;
-                write_val[1] = ctx.Digit;
-                zlg7290_hw_write(ptr_zlg7290, 2, &retlen, (char *)write_val);
-                msleep(1);  
+            retlen = copy_from_user(&ctx, (struct digit_cell_ctx*) arg, sizeof(struct digit_cell_ctx));
+            if(retlen!=0){
+                printk("error");
             }
+            write_val[0] = REG_DP_RAM0 + ctx.Index;
+            write_val[1] = ctx.Digit;
+            zlg7290_hw_write(ptr_zlg7290, 2, &retlen, (char *)write_val);
+            msleep(1);  
             break;
         case WRITE_DPRAM:
-            if (copy_from_user(data_buf, (void *)arg, 8)) return -EFAULT;
-
             break;
         default:
             dev_err(&ptr_zlg7290->client->dev, "unsupported command!\n");

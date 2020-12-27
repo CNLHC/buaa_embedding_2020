@@ -1,7 +1,7 @@
-cmake_minimum_required(VERSION 3.15)
+cmake_minimum_required(VERSION 3.10.2)
 project(buaa_embedding_exp6)
 
-set(MODULE_NAME buaa_led)
+set(MODULE_NAME myzr_zlg7290)
 
 set(kerneldir "" CACHE STRING "Path to the kernel build directory")
 
@@ -13,9 +13,9 @@ if(NOT kernel_makefile)
 endif()
 
 
-add_library(buaa_led_lib STATIC led_ioctl.c)
-get_target_property(module_sources buaa_led_lib SOURCES)
-list(APPEND module_sources ./myzr_zlg7290.c)
+#add_library(buaa_led_lib STATIC led_ioctl.c)
+#get_target_property(module_sources buaa_led_lib SOURCES)
+list(APPEND module_sources ./myzr_zlg7290.c ./led_ioctl.h)
 string(REPLACE ";" " " module_sources_string "${module_sources}")
 
 configure_file(Kbuild.in Kbuild @ONLY)
@@ -26,12 +26,12 @@ endforeach()
 
 
 set(module_cmd ${CMAKE_MAKE_PROGRAM} -C ${kerneldir} M=${CMAKE_CURRENT_BINARY_DIR})
-add_custom_command(OUTPUT mymodule.ko
+add_custom_command(OUTPUT ${MODULE_NAME}.ko
   COMMAND ${module_cmd} modules
   WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
   DEPENDS ${module_sources} ${CMAKE_CURRENT_BINARY_DIR}/Kbuild
   VERBATIM)
 
-add_custom_target(module DEPENDS mymodule.ko)
+add_custom_target(module DEPENDS ${MODULE_NAME}.ko)
 add_custom_target(module-clean COMMAND ${module_cmd} clean)
 
