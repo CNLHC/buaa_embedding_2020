@@ -6,6 +6,7 @@
 #include <sys/ioctl.h>
 #include <time.h>
 #include <string.h>
+#include "led_ioctl.h"
 
 #define WRITE_DPRAM _IO('Z', 0)
 
@@ -26,7 +27,7 @@ unsigned char bit_map[8] = {
 int main(int argc, const char *argv[])
 {
 	//首先打开设备文件，（自己在/dev/下新建）
-    // fd = fopen();
+    fd = fopen("/dev/blabla","w");
     
 	//调用ioctl(*, *, *)函数，实现数码管的显示
     //ioctl(,,)
@@ -35,6 +36,7 @@ int main(int argc, const char *argv[])
     int value[4] = {0};
     int loop_round = 100;
     int i = 0;
+    int j = 0;
 
     // 循环100s, 之后自动关闭设备
     for(i=0;i<loop_round;i++){
@@ -46,14 +48,19 @@ int main(int argc, const char *argv[])
         value[1] = minu_last_map[tm_now->tm_min%10];
         value[2] = hex_map[(tm_now->tm_sec/10)];
         value[3] = hex_map[tm_now->tm_sec%10];
+        for(j=0;j<4;j++){
+            ioctl(fd, LED_APPLY, &digit_cell_ctx{j,value[j]});
+        }
         sleep(1);
     }
 
     // 4个数码管写入0, 恢复原始状态
-    value[0] = 0; value[0] = 0; value[2] = 0; value[3] = 0; 
+    for(j=0;j<4;j++){
+        ioctl(fd, LED_APPLY, &digit_cell_ctx{j,0});
+    }
     
 	//关闭数码管
-    // fclose();
+    fclose(fp);
 	return 0;
 }
 
