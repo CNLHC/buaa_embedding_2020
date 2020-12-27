@@ -27,7 +27,7 @@ unsigned char bit_map[8] = {
 int main(int argc, const char *argv[])
 {
 	//首先打开设备文件，（自己在/dev/下新建）
-    fd = fopen("/dev/blabla","w");
+    FILE* fd = fopen("/dev/blabla","w");
     
 	//调用ioctl(*, *, *)函数，实现数码管的显示
     //ioctl(,,)
@@ -60,7 +60,7 @@ int main(int argc, const char *argv[])
     }
     
 	//关闭数码管
-    fclose(fp);
+    fclose(fd);
 	return 0;
 }
 
