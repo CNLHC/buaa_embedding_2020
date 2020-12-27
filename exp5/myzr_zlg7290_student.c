@@ -24,54 +24,54 @@
 #define ZLG7290_NAME		"zlg7290"
 #define ZLG7290_LED_NAME	"zlg7290_led"
 
-#define REG_DP_RAM0		0x10  //µÚÒ»¸öÊıÂë¹ÜµÄ¼Ä´æÆ÷
-#define REG_DP_RAM1		0x11  //µÚ¶ş¸öÊıÂë¹ÜµÄ¼Ä´æÆ÷
-#define REG_DP_RAM2		0x12  //µÚÈı¸öÊıÂë¹ÜµÄ¼Ä´æÆ÷
-#define REG_DP_RAM3		0x13  //µÚËÄ¸öÊıÂë¹ÜµÄ¼Ä´æÆ÷
+#define REG_DP_RAM0		0x10  //ç¬¬ä¸€ä¸ªæ•°ç ç®¡çš„å¯„å­˜å™¨
+#define REG_DP_RAM1		0x11  //ç¬¬äºŒä¸ªæ•°ç ç®¡çš„å¯„å­˜å™¨
+#define REG_DP_RAM2		0x12  //ç¬¬ä¸‰ä¸ªæ•°ç ç®¡çš„å¯„å­˜å™¨
+#define REG_DP_RAM3		0x13  //ç¬¬å››ä¸ªæ•°ç ç®¡çš„å¯„å­˜å™¨
 #define REG_DP_RAM4		0x14
 #define REG_DP_RAM5		0x15
 #define REG_DP_RAM6		0x16
 #define REG_DP_RAM7		0x17
 
-#define ZLG7290_LED_MAJOR	800  //Ö÷Éè±¸ºÅ
-#define ZLG7290_LED_MINOR	0    //´ÓÉè±¸ºÅ
-#define ZLG7290_LED_DEVICES	1    //Éè±¸ÊıÁ¿
+#define ZLG7290_LED_MAJOR	800  //ä¸»è®¾å¤‡å·
+#define ZLG7290_LED_MINOR	0    //ä»è®¾å¤‡å·
+#define ZLG7290_LED_DEVICES	1    //è®¾å¤‡æ•°é‡
 
 #define WRITE_DPRAM _IO('Z', 0)
 
-// ÊıÂë¹ÜÉè±¸½á¹¹Ìå
+// æ•°ç ç®¡è®¾å¤‡ç»“æ„ä½“
 struct zlg7290
 {
-	struct i2c_client *client;    //struct i2c_client´ú±íÒ»¸ö¹ÒÔØµ½i2c×ÜÏßÉÏµÄi2c´ÓÉè±¸
-	struct input_dev *input;      //struct input_dev´ú±íÒ»¸öÊäÈëÉè±¸
-	struct delayed_work work;     //Î´Ê¹ÓÃ£¬ÓÃÓÚÑÓ³Ù¹¤×÷µÄµ÷¶È
-	unsigned long delay;          //Î´Ê¹ÓÃ£¬ÓÃÓÚÑÓ³Ù¹¤×÷µÄµ÷¶È
+	struct i2c_client *client;    //struct i2c_clientä»£è¡¨ä¸€ä¸ªæŒ‚è½½åˆ°i2cæ€»çº¿ä¸Šçš„i2cä»è®¾å¤‡
+	struct input_dev *input;      //struct input_devä»£è¡¨ä¸€ä¸ªè¾“å…¥è®¾å¤‡
+	struct delayed_work work;     //æœªä½¿ç”¨ï¼Œç”¨äºå»¶è¿Ÿå·¥ä½œçš„è°ƒåº¦
+	unsigned long delay;          //æœªä½¿ç”¨ï¼Œç”¨äºå»¶è¿Ÿå·¥ä½œçš„è°ƒåº¦
 	
-	struct cdev cdev;             //cdev×Ö·ûÉè±¸
+	struct cdev cdev;             //cdevå­—ç¬¦è®¾å¤‡
 };
 
-// ÊıÂë¹ÜÉè±¸½á¹¹ÌåÈ«¾ÖÊµÀı
+// æ•°ç ç®¡è®¾å¤‡ç»“æ„ä½“å…¨å±€å®ä¾‹
 struct zlg7290 *ptr_zlg7290;
 
-// ÊıÂë¹ÜÎ»Í¼£¬Ã¿Ò»¸öbit´ú±íÒ»¸ùµÆ¹Ü£¬ÖÃ1:ÁÁ£¬ÖÃ0:Ãğ
-//Todo£ºÀıÈç0x80´ú±íÁÁÊıÂë¹ÜµÄµÚÒ»¶Î
+// æ•°ç ç®¡ä½å›¾ï¼Œæ¯ä¸€ä¸ªbitä»£è¡¨ä¸€æ ¹ç¯ç®¡ï¼Œç½®1:äº®ï¼Œç½®0:ç­
+//Todoï¼šä¾‹å¦‚0x80ä»£è¡¨äº®æ•°ç ç®¡çš„ç¬¬ä¸€æ®µ
 unsigned char bit_map[8] = {
-	0x80,//²¹È«£º
+	0x80,//è¡¥å…¨ï¼š
 };
 
-// ÊıÂë¹ÜÏÔÊ¾0-F 16½øÖÆ×Ö·ûµÄÎ»Í¼Êı¾İ
-//Todo£º ÀıÈç0xfc ´ú±í ¡°0¡±£¬0x0c ´ú±í ¡°1¡±£¨×óÓÒÁ½ÖÖ1¾ù¿É£©
+// æ•°ç ç®¡æ˜¾ç¤º0-F 16è¿›åˆ¶å­—ç¬¦çš„ä½å›¾æ•°æ®
+//Todoï¼š ä¾‹å¦‚0xfc ä»£è¡¨ â€œ0â€ï¼Œ0x0c ä»£è¡¨ â€œ1â€ï¼ˆå·¦å³ä¸¤ç§1å‡å¯ï¼‰
 unsigned char hex_map[16] = {
-	0xfc, 0x0c, // ²¹È«
+	0xfc, 0x0c, // è¡¥å…¨
 };
 
-// Ïòi2c×ÜÏßĞ´Êı¾İ
-// ¿¼µã£º·ÖÎö¸÷¸ö²ÎÊıÈ¡ÖµµÄº¬Òå
-/* ²ÎÊı£º
- * zlg7290 £ºÊıÂë¹Ü½á¹¹ÌåÖ¸Õë
- * len £º´ıĞ´ÈëµÄ×Ö½ÚÊı£¨ÒÔbyteÎªµ¥Î»£©
- * retlen £º ·µ»ØĞ´ÈëµÄ×Ö½ÚÊı£¨readº¯ÊıÖĞÊ¹ÓÃ£©£¨×¢ÒâÊÇ¸öÖ¸Õë£©
- * buf£º ´ıĞ´ÈëÊı¾İÖ¸Õë£¨¼Ä´æÆ÷µØÖ·ºÍ´ıĞ´Êı¾İ£©
+// å‘i2cæ€»çº¿å†™æ•°æ®
+// è€ƒç‚¹ï¼šåˆ†æå„ä¸ªå‚æ•°å–å€¼çš„å«ä¹‰
+/* å‚æ•°ï¼š
+ * zlg7290 ï¼šæ•°ç ç®¡ç»“æ„ä½“æŒ‡é’ˆ
+ * len ï¼šå¾…å†™å…¥çš„å­—èŠ‚æ•°ï¼ˆä»¥byteä¸ºå•ä½ï¼‰
+ * retlen ï¼š è¿”å›å†™å…¥çš„å­—èŠ‚æ•°ï¼ˆreadå‡½æ•°ä¸­ä½¿ç”¨ï¼‰ï¼ˆæ³¨æ„æ˜¯ä¸ªæŒ‡é’ˆï¼‰
+ * bufï¼š å¾…å†™å…¥æ•°æ®æŒ‡é’ˆï¼ˆå¯„å­˜å™¨åœ°å€å’Œå¾…å†™æ•°æ®ï¼‰
  */
 static int zlg7290_hw_write(struct zlg7290 *zlg7290,  int len, size_t *retlen, char *buf)
 {
@@ -80,17 +80,17 @@ static int zlg7290_hw_write(struct zlg7290 *zlg7290,  int len, size_t *retlen, c
 	int ret;
 
     //i2c_msg
-    /* ²ÎÊı£º 
-     * client->addr : ´ÓÉè±¸·ÃÎÊµØÖ·
-     * 0 £ºflagÎ»£¬0´ú±íwrite£¬I2C_M_RD´ú±íread
-     * len £º ´ıĞ´ÈëµÄ×Ö½ÚÊı
-     * buf £º ´ıĞ´ÈëÊı¾İÖ¸Õë£¨¼Ä´æÆ÷µØÖ·ºÍ´ıĞ´Êı¾İ£©
+    /* å‚æ•°ï¼š 
+     * client->addr : ä»è®¾å¤‡è®¿é—®åœ°å€
+     * 0 ï¼šflagä½ï¼Œ0ä»£è¡¨writeï¼ŒI2C_M_RDä»£è¡¨read
+     * len ï¼š å¾…å†™å…¥çš„å­—èŠ‚æ•°
+     * buf ï¼š å¾…å†™å…¥æ•°æ®æŒ‡é’ˆï¼ˆå¯„å­˜å™¨åœ°å€å’Œå¾…å†™æ•°æ®ï¼‰
      */
 	struct i2c_msg msg[] = {
 		{ client->addr, 0, len, buf},
 	};
     
-	//Todo£ºµ÷ÓÃi2c_transferº¯ÊıÏò×ÜÏßÉÏĞ´Êı¾İ£¬×¢Òâ²ÎÊı
+	//Todoï¼šè°ƒç”¨i2c_transferå‡½æ•°å‘æ€»çº¿ä¸Šå†™æ•°æ®ï¼Œæ³¨æ„å‚æ•°
 	//ret =i2c_transfer(client->adapter, Todo, Todo);
 	if (ret < 0) 
 	{
@@ -102,44 +102,44 @@ static int zlg7290_hw_write(struct zlg7290 *zlg7290,  int len, size_t *retlen, c
 	return 0;
 }
 
-// ´Ói2c×ÜÏß¶ÁÊı¾İ
+// ä»i2cæ€»çº¿è¯»æ•°æ®
 static int zlg7290_hw_read(struct zlg7290 *zlg7290, int len, size_t *retlen, char *buf)
 {
-    //Todo£º·ÂÕÕzlg7290_hw_writeĞ´³öreadº¯Êı
-    /*²½Öè£º
-     *1. ¹¹Ôìi2c_msg msg[]£¨ÓÉÓÚreadĞèÒªÁ½´ÎÍ¨ĞÅ£¬Òò´ËĞèÒª¹¹ÔìÁ½´Î²ÎÊıµÄÖµ£©
-         µÚÒ»¸öi2c_msgÓÃÀ´·¢ËÍĞèÒª¶ÁÈ¡µÄ´ÓÉè±¸Ä¿±ê¼Ä´æÆ÷µÄµØÖ·£¬buf±£´æ´ı¶Á¼Ä´æÆ÷µÄµØÖ·
-         µÚ¶ş¸öi2c_msgÓÃÀ´ÉèÖÃ½ÓÊÕ´ÓÉè±¸Ä¿±ê¼Ä´æÆ÷·µ»ØÊı¾İµÄbufÒÔ¼°Êı¾İ³¤¶È£¬buf±£´æ´Ó¼Ä´æÆ÷ÄÚ¶Áµ½µÄÖµµÄµØÖ·
-     *2. µ÷ÓÃi2c_transfer(×¢Òâ²ÎÊıÈçºÎÌîĞ´)
-     *3. ´íÎó´¦Àí
+    //Todoï¼šä»¿ç…§zlg7290_hw_writeå†™å‡ºreadå‡½æ•°
+    /*æ­¥éª¤ï¼š
+     *1. æ„é€ i2c_msg msg[]ï¼ˆç”±äºreadéœ€è¦ä¸¤æ¬¡é€šä¿¡ï¼Œå› æ­¤éœ€è¦æ„é€ ä¸¤æ¬¡å‚æ•°çš„å€¼ï¼‰
+         ç¬¬ä¸€ä¸ªi2c_msgç”¨æ¥å‘é€éœ€è¦è¯»å–çš„ä»è®¾å¤‡ç›®æ ‡å¯„å­˜å™¨çš„åœ°å€ï¼Œbufä¿å­˜å¾…è¯»å¯„å­˜å™¨çš„åœ°å€
+         ç¬¬äºŒä¸ªi2c_msgç”¨æ¥è®¾ç½®æ¥æ”¶ä»è®¾å¤‡ç›®æ ‡å¯„å­˜å™¨è¿”å›æ•°æ®çš„bufä»¥åŠæ•°æ®é•¿åº¦ï¼Œbufä¿å­˜ä»å¯„å­˜å™¨å†…è¯»åˆ°çš„å€¼çš„åœ°å€
+     *2. è°ƒç”¨i2c_transfer(æ³¨æ„å‚æ•°å¦‚ä½•å¡«å†™)
+     *3. é”™è¯¯å¤„ç†
      */
 
 }
 
-// ´ò¿ªÊıÂë¹ÜÉè±¸
+// æ‰“å¼€æ•°ç ç®¡è®¾å¤‡
 static int zlg7290_led_open(struct inode *inode, struct file *file)
 {
 	return 0;
 }
 
-// ÊÍ·ÅÊıÂë¹ÜÉè±¸
+// é‡Šæ”¾æ•°ç ç®¡è®¾å¤‡
 static int zlg7290_led_release(struct inode *inode, struct file *file)
 {
 	return 0;
 }
 
-// ÏòÉÏµÄ½Ó¿Ú£¬ÓÃ»§Ì¬Í¨¹ıµ÷ÓÃioctlÏµÍ³º¯Êı£¬ÒşÊ½µ÷ÓÃ¸Ãº¯Êı
-/* ²ÎÊı£º
- * filp £ºÎÄ¼ş½á¹¹Ìå£¬ÓÃ»§Ì¬ÎªÎÄ¼şÃèÊö·û
- * cmd£º
- * arg£º ´ıĞ´Êı¾İ£¨longÔÚÏµÍ³ÖĞÕ¼8bytes£¬¶ÔÓ¦8¸ö¼Ä´æÆ÷£¬arg¸ßÎ»¶ÔÓ¦µÍµØÖ·¼Ä´æÆ÷£©
+// å‘ä¸Šçš„æ¥å£ï¼Œç”¨æˆ·æ€é€šè¿‡è°ƒç”¨ioctlç³»ç»Ÿå‡½æ•°ï¼Œéšå¼è°ƒç”¨è¯¥å‡½æ•°
+/* å‚æ•°ï¼š
+ * filp ï¼šæ–‡ä»¶ç»“æ„ä½“ï¼Œç”¨æˆ·æ€ä¸ºæ–‡ä»¶æè¿°ç¬¦
+ * cmdï¼š
+ * argï¼š å¾…å†™æ•°æ®ï¼ˆlongåœ¨ç³»ç»Ÿä¸­å 8bytesï¼Œå¯¹åº”8ä¸ªå¯„å­˜å™¨ï¼Œargé«˜ä½å¯¹åº”ä½åœ°å€å¯„å­˜å™¨ï¼‰
  */
 static long zlg7290_led_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 {
 	return 0;
 }
 
-// file_operations: °ÑÏµÍ³µ÷ÓÃºÍÇı¶¯³ÌĞò¹ØÁªÆğÀ´µÄ¹Ø¼üÊı¾İ½á¹¹
+// file_operations: æŠŠç³»ç»Ÿè°ƒç”¨å’Œé©±åŠ¨ç¨‹åºå…³è”èµ·æ¥çš„å…³é”®æ•°æ®ç»“æ„
 static struct file_operations zlg7290_led_fops = {
 	.owner = THIS_MODULE,
 	.open = zlg7290_led_open,
@@ -147,7 +147,7 @@ static struct file_operations zlg7290_led_fops = {
 	.unlocked_ioctl = zlg7290_led_ioctl,
 };
 
-// ×¢²áÊıÂë¹ÜĞ¡µÆÉè±¸Ö÷Éè±¸ºÅ£ºMAJOR£¬´ÓÉè±¸ºÅ£ºMINOR
+// æ³¨å†Œæ•°ç ç®¡å°ç¯è®¾å¤‡ä¸»è®¾å¤‡å·ï¼šMAJORï¼Œä»è®¾å¤‡å·ï¼šMINOR
 static int register_zlg7290_led(struct zlg7290 *zlg7290) 
 {
 	struct cdev *zlg7290_cdev;
@@ -176,7 +176,7 @@ err_unreg_chrdev:
 	return ret;
 }
 
-// ´ÓÏµÍ³ÖĞ×¢ÏúÉè±¸
+// ä»ç³»ç»Ÿä¸­æ³¨é”€è®¾å¤‡
 static int unregister_zlg7290_led(struct zlg7290 *zlg7290) 
 {
 	cdev_del(&zlg7290->cdev);
@@ -186,8 +186,8 @@ static int unregister_zlg7290_led(struct zlg7290 *zlg7290)
 	return 0;
 }
 
-// Ì½²âº¯Êı£¬Èç¹ûÇı¶¯Æ¥Åäµ½ÁËÄ¿±êÉè±¸£¬×ÜÏß»á×Ô¶¯»Øµ÷probeº¯Êı
-// ¿¼µã£ºprobeº¯ÊıºÍremoveº¯ÊıÔÚÄÄÀï°ó¶¨µÄ£¿
+// æ¢æµ‹å‡½æ•°ï¼Œå¦‚æœé©±åŠ¨åŒ¹é…åˆ°äº†ç›®æ ‡è®¾å¤‡ï¼Œæ€»çº¿ä¼šè‡ªåŠ¨å›è°ƒprobeå‡½æ•°
+// è€ƒç‚¹ï¼šprobeå‡½æ•°å’Œremoveå‡½æ•°åœ¨å“ªé‡Œç»‘å®šçš„ï¼Ÿ
 static int 
 zlg7290_probe(struct i2c_client *client, const struct i2c_device_id *id)
 {
@@ -200,7 +200,7 @@ zlg7290_probe(struct i2c_client *client, const struct i2c_device_id *id)
 		return -ENODEV;
 	}
 	
-	//ÉêÇëÉè±¸½á¹¹ÌåËùĞèÒªµÄ¿Õ¼ä
+	//ç”³è¯·è®¾å¤‡ç»“æ„ä½“æ‰€éœ€è¦çš„ç©ºé—´
 	ptr_zlg7290 = kzalloc(sizeof(struct zlg7290), GFP_KERNEL);
 	input_dev = input_allocate_device();
 	if (!ptr_zlg7290 || !input_dev) {
@@ -218,7 +218,7 @@ zlg7290_probe(struct i2c_client *client, const struct i2c_device_id *id)
 	input_dev->evbit[0] = BIT_MASK(EV_KEY);
 	
 	
-	// ×¢²áÊäÈëÉè±¸
+	// æ³¨å†Œè¾“å…¥è®¾å¤‡
 	ret = input_register_device(input_dev);
 	if (ret) {
 		dev_err(&client->dev, "unable to register input device\n");
@@ -246,7 +246,7 @@ err_free_mem:
 	return ret;
 }
 
-// ÊÍ·Åº¯Êı£¬Èç¹ûÆ¥Åäµ½µÄÉè±¸´Ó×ÜÏßÒÆ³ıÁË£¬×ÜÏß»á×Ô¶¯»Øµ÷removeº¯Êı
+// é‡Šæ”¾å‡½æ•°ï¼Œå¦‚æœåŒ¹é…åˆ°çš„è®¾å¤‡ä»æ€»çº¿ç§»é™¤äº†ï¼Œæ€»çº¿ä¼šè‡ªåŠ¨å›è°ƒremoveå‡½æ•°
 static int zlg7290_remove(struct i2c_client *client) 
 {
 	struct zlg7290 *zlg7290 = i2c_get_clientdata(client);
@@ -255,9 +255,9 @@ static int zlg7290_remove(struct i2c_client *client)
 	return 0;
 }
 
-// Æ¥ÅäÉè±¸ºÍÇı¶¯
-// ¿¼µã£ºÎªÊ²Ã´ĞèÒªi2c_device_id£¿
-// ÌáÊ¾£ºÒ»¸öÉè±¸Ö»ÓĞÒ»¸öÇı¶¯£¬Ò»¸öÇı¶¯¿ÉÒÔ¶ÔÓ¦¶à¸öÉè±¸
+// åŒ¹é…è®¾å¤‡å’Œé©±åŠ¨
+// è€ƒç‚¹ï¼šä¸ºä»€ä¹ˆéœ€è¦i2c_device_idï¼Ÿ
+// æç¤ºï¼šä¸€ä¸ªè®¾å¤‡åªæœ‰ä¸€ä¸ªé©±åŠ¨ï¼Œä¸€ä¸ªé©±åŠ¨å¯ä»¥å¯¹åº”å¤šä¸ªè®¾å¤‡
 static const struct i2c_device_id zlg7290_id[] = {
 	{ZLG7290_NAME, 0 },
 	{ }
@@ -272,9 +272,9 @@ static const struct of_device_id zlg7290_dt_ids[] = {
 MODULE_DEVICE_TABLE(of, zlg7290_dt_ids);
 #endif
 
-// Çı¶¯³ÌĞò½á¹¹Ìå£¨ÖØÒª£©
-// ¿¼µã£ºÇë·ÖÎöinit£¬probe£¬removeºÍexitº¯ÊıµÄÖ´ĞĞË³Ğò
-// ÌáÊ¾£º¿ÉÍ¨¹ıprintkÀ´·ÖÎö
+// é©±åŠ¨ç¨‹åºç»“æ„ä½“ï¼ˆé‡è¦ï¼‰
+// è€ƒç‚¹ï¼šè¯·åˆ†æinitï¼Œprobeï¼Œremoveå’Œexitå‡½æ•°çš„æ‰§è¡Œé¡ºåº
+// æç¤ºï¼šå¯é€šè¿‡printkæ¥åˆ†æ
 static struct i2c_driver zlg7290_driver= {
 	.driver	= {
 		.name	= ZLG7290_NAME,
@@ -286,52 +286,52 @@ static struct i2c_driver zlg7290_driver= {
 	.id_table	= zlg7290_id
 };
 
-// ³õÊ¼»¯Ä£¿é
+// åˆå§‹åŒ–æ¨¡å—
 static int __init zz_init(void)
 {
-	//module_i2c_driverºêÕ¹¿ª
+	//module_i2c_driverå®å±•å¼€
 	i2c_register_driver(THIS_MODULE, &zlg7290_driver);
 
-	//ÄÚºËÌ¬i2c_transferÍ¨ĞÅ
-	//Todo£º±£³Ö8¸öÊıÂë¹ÜÄÚÈİÏàÍ¬£¨Ö»Ê¹ÓÃµ½4¸ö£©£¬Ñ­»·ÏÔÊ¾bit_mapºÍhex_mapÖĞµÄËùÓĞ×Ö·û
-	//ÌáÊ¾£º µ÷ÓÃzlg7290_hw_writeº¯Êı
+	//å†…æ ¸æ€i2c_transferé€šä¿¡
+	//Todoï¼šä¿æŒ8ä¸ªæ•°ç ç®¡å†…å®¹ç›¸åŒï¼ˆåªä½¿ç”¨åˆ°4ä¸ªï¼‰ï¼Œå¾ªç¯æ˜¾ç¤ºbit_mapå’Œhex_mapä¸­çš„æ‰€æœ‰å­—ç¬¦
+	//æç¤ºï¼š è°ƒç”¨zlg7290_hw_writeå‡½æ•°
 	int i;
     int j;
 	ssize_t len = 0;
 
 	unsigned char write_val[2] = {0};
-    /* write_val[0] : ´ıĞ´Èë¼Ä´æÆ÷µÄµØÖ·
-     * write_val[1] : ´ıĞ´Èë¼Ä´æÆ÷µÄÊı¾İ
-     * ÀıÈç£ºwrite_val[0] = REG_DP_RAM0;  //Ğ´0ºÅ¼Ä´æÆ÷
-     *      write_val[1] = 0xfc;         //Ğ´Èë×Ö·û¡°0¡±
+    /* write_val[0] : å¾…å†™å…¥å¯„å­˜å™¨çš„åœ°å€
+     * write_val[1] : å¾…å†™å…¥å¯„å­˜å™¨çš„æ•°æ®
+     * ä¾‹å¦‚ï¼šwrite_val[0] = REG_DP_RAM0;  //å†™0å·å¯„å­˜å™¨
+     *      write_val[1] = 0xfc;         //å†™å…¥å­—ç¬¦â€œ0â€
      */
-	for(i=0; i<8; i++){ //Íâ²ãÑ­»·£ºbit_mapµÄ³¤¶È
-		for(j = 0; j < 8; j++){// ÄÚ²ãÑ­»· £º 8¸ö¼Ä´æÆ÷¶ÔÓ¦8¸öÊıÂë¹Ü£¬¿ª·¢°åÉÏÖ»Ê¹ÓÃµ½ÁËµÍ4Î»¼Ä´æÆ÷
-			//Todo£º
+	for(i=0; i<8; i++){ //å¤–å±‚å¾ªç¯ï¼šbit_mapçš„é•¿åº¦
+		for(j = 0; j < 8; j++){// å†…å±‚å¾ªç¯ ï¼š 8ä¸ªå¯„å­˜å™¨å¯¹åº”8ä¸ªæ•°ç ç®¡ï¼Œå¼€å‘æ¿ä¸Šåªä½¿ç”¨åˆ°äº†ä½4ä½å¯„å­˜å™¨
+			//Todoï¼š
 
-			msleep(1); //Ë¯Ãß1ºÁÃë
+			msleep(1); //ç¡çœ 1æ¯«ç§’
 		}
-		msleep(1000); //Ë¯Ãß1Ãë
+		msleep(1000); //ç¡çœ 1ç§’
 	}
 
-    for(i=0; i<16; i++){ //Íâ²ãÑ­»·£ºhex_mapµÄ³¤¶È
-		for(j = 0; j < 8; j++){// ÄÚ²ãÑ­»· £º 8¸ö¼Ä´æÆ÷¶ÔÓ¦8¸öÊıÂë¹Ü£¬¿ª·¢°åÉÏÖ»Ê¹ÓÃµ½ÁËµÍ4Î»¼Ä´æÆ÷
-			//Todo£º
+    for(i=0; i<16; i++){ //å¤–å±‚å¾ªç¯ï¼šhex_mapçš„é•¿åº¦
+		for(j = 0; j < 8; j++){// å†…å±‚å¾ªç¯ ï¼š 8ä¸ªå¯„å­˜å™¨å¯¹åº”8ä¸ªæ•°ç ç®¡ï¼Œå¼€å‘æ¿ä¸Šåªä½¿ç”¨åˆ°äº†ä½4ä½å¯„å­˜å™¨
+			//Todoï¼š
 	
-			msleep(1); //Ë¯Ãß1ºÁÃë
+			msleep(1); //ç¡çœ 1æ¯«ç§’
 		}
-		msleep(1000); //Ë¯Ãß1Ãë
+		msleep(1000); //ç¡çœ 1ç§’
 	}
     
     for(j = 0; j < 8; j++){
-			//Todo£º ×îºóÒª½«ËùÓĞÊıÂë¹ÜÖÃÁã
+			//Todoï¼š æœ€åè¦å°†æ‰€æœ‰æ•°ç ç®¡ç½®é›¶
 	
 			msleep(1);
 		}
 	return 0;
 }
 
-// Ğ¶ÔØÄ£¿é
+// å¸è½½æ¨¡å—
 static void __exit zz_exit(void)
 {	
     i2c_del_driver(&zlg7290_driver);

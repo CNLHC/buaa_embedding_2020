@@ -111,20 +111,26 @@ int main(int argc, char *argv[]) {
     if (ret == -1) {
       printf("select err:%s\n", strerror(errno));
     }
-    if (ret > 0) {
-      printf("Triggering interrupt. \n");
-      value = gpio_read_keyval(key_num);
-      if (value == 0) {
-        led_val = gpio_get_value(key_to_led(ret));
-        if (led_val == 1) {
-          gpio_set_value(key_to_led(ret), SYSFS_GPIO_RST_VAL_L);
-        } else {
-          // Todo:
-          gpio_set_value(key_to_led(ret), SYSFS_GPIO_RST_VAL_H);
+    if (ret < 7) {
+      for (int i = 0; i < KEY_COUNTS; i++) {
+        if (FD_ISSET(keyfd[i], &fdset)) {
+          printf("Triggering interrupt. %d\n", ret);
+          int keynum = GPIO_KEY_NUMBER[i];
+          value = gpio_read_keyval(keynum);
+          if (value == 0) {
+            led_val = gpio_get_value(key_to_led(keynum));
+            if (led_val == 1) {
+              gpio_set_value(key_to_led(keynum), SYSFS_GPIO_RST_VAL_L);
+            } else {
+              // Todo:
+              gpio_set_value(key_to_led(keynum), SYSFS_GPIO_RST_VAL_H);
+            }
+          } else {
+            continue;
+          }
         }
-      } else {
-        continue;
       }
+
     } else {
       printf("select NULL.\n");
     }

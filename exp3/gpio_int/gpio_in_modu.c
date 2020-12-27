@@ -90,7 +90,7 @@ static int led_up(int led_num, int key_num)
 	//Todo：设置中断
 	irq = gpio_to_irq(key_num);
 	printk(KERN_ALERT"begin the irq num is %d.\n",irq);
-	if(irq != -1)
+	if(ire != -1)
 	{
 
 		//注册中断函数irq_process()，中断号为key_num，设置下降沿触发
