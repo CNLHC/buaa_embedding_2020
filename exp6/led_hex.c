@@ -23,7 +23,7 @@ unsigned char bit_map[8] = {
 
 int main(int argc, const char *argv[]) {
     //首先打开设备文件，（自己在/dev/下新建）
-    int fd = open("/dev/blabla", O_RDWR);
+    int fd = open("/dev/buaa_led", O_RDWR);
 
     //调用ioctl(*, *, *)函数，实现数码管的显示
     // ioctl(,,)
