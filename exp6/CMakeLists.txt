@@ -50,3 +50,15 @@ target_include_directories(clock PUBLIC .)
 add_executable(led_hex led_hex.c)
 target_include_directories(led_hex PUBLIC .)
 
+add_executable(extra_3 ./extra_3.c)
+target_include_directories(extra_3 PUBLIC .)
+
+add_executable(extra_1 ./led_scanf.c)
+target_include_directories(extra_1 PUBLIC .)
+
+add_executable(extra_2 ./extra_2.c)
+target_include_directories(extra_2 PUBLIC .)
+
+
+
+
