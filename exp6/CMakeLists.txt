@@ -1,9 +1,18 @@
 cmake_minimum_required(VERSION 3.10.2)
-project(buaa_embedding_exp6)
+project(buaa_embedding_exp6 )
+enable_language(C)
 
 set(MODULE_NAME myzr_zlg7290)
 
 set(kerneldir "" CACHE STRING "Path to the kernel build directory")
+
+
+set(CMAKE_C_COMPILER "/root/my-imx6/03_tools/gcc-linaro-5.4.1-2017.05-i686_arm-linux-gnueabihf/bin/arm-linux-gnueabihf-gcc")
+set(CMAKE_CXX_COMPILER "/root/my-imx6/03_tools/gcc-linaro-5.4.1-2017.05-i686_arm-linux-gnueabihf/bin/arm-linux-gnueabihf-gcc")
+
+
+
+
 
 
 find_file(kernel_makefile NAMES Makefile
