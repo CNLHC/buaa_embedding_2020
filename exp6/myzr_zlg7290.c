@@ -173,6 +173,9 @@ static int register_zlg7290_led(struct zlg7290 *zlg7290) {
     struct cdev *zlg7290_cdev;
     int ret;
     dev_t devid;
+    static struct class *c1;
+
+
 
     devid = MKDEV(ZLG7290_LED_MAJOR, ZLG7290_LED_MINOR);
     ret = register_chrdev_region(devid, ZLG7290_LED_DEVICES, ZLG7290_LED_NAME);
@@ -185,6 +188,12 @@ static int register_zlg7290_led(struct zlg7290 *zlg7290) {
     cdev_init(zlg7290_cdev, &zlg7290_led_fops);
     zlg7290_cdev->owner = THIS_MODULE;
     ret = cdev_add(zlg7290_cdev, devid, 1);
+
+    c1 = class_create(THIS_MODULE, "chardrv");
+    device_create(c1, NULL,devid, NULL,"buaa_led");
+
+
+
     if (ret < 0) {
         dev_err(&zlg7290->client->dev, "cdev add fail!\n");
         goto err_unreg_chrdev;
